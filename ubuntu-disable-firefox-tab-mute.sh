@@ -1,6 +1,16 @@
 pkill firefox; sleep 2
-PROFILE=$(find ~/snap/firefox/common/.mozilla/firefox ~/.mozilla/firefox -maxdepth 1 -type d \( -name '*.default-release' -o -name '*.default' \) 2>/dev/null | head -n1)
-cat > "$PROFILE/chrome/userChrome.css" << 'CSS'
+
+for FF_ROOT in ~/snap/firefox/common/.mozilla/firefox ~/.mozilla/firefox; do
+  [ -d "$FF_ROOT" ] || continue
+  for PROFILE in "$FF_ROOT"/*/; do
+    [ -f "$PROFILE/prefs.js" ] || continue
+
+    mkdir -p "$PROFILE/chrome"
+
+    grep -q 'legacyUserProfileCustomizations.stylesheets' "$PROFILE/user.js" 2>/dev/null || \
+      echo 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' >> "$PROFILE/user.js"
+
+    cat > "$PROFILE/chrome/userChrome.css" << 'CSS'
 .tab-icon-overlay,
 .tab-audio-button,
 .tab-icon-sound,
@@ -10,3 +20,7 @@ cat > "$PROFILE/chrome/userChrome.css" << 'CSS'
   pointer-events: none !important;
 }
 CSS
+
+    echo "Wrote to: $PROFILE"
+  done
+done
